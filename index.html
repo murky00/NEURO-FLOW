@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NEURO-FLOW v3: Ethereal Focus</title>
+    <style>
+        :root { --accent: #00f3ff; --bg: #050a10; --glass: rgba(15, 20, 25, 0.7); }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: #fff; touch-action: none; user-select: none; }
+        
+        #stage { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        
+        /* BACKGROUND */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; filter: blur(20px) contrast(1.2); transition: opacity 0.5s; }
+        .paused canvas { opacity: 0.3; } /* Dim background when paused */
+
+        /* MAIN WORD DISPLAY */
+        .focus-zone { 
+            position: relative; z-index: 10; width: 100%; height: 300px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .word-display { 
+            font-size: 72px; font-weight: 300; letter-spacing: -1px; text-align: center; 
+            color: rgba(255,255,255,0.95); text-shadow: 0 0 30px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        .highlight { font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--accent); }
+        
+        /* VISUAL ANCHOR */
+        .guide-lines { position: absolute; width: 100%; height: 2px; top: 50%; left: 0; display: flex; justify-content: center; align-items: center; pointer-events: none; opacity: 0.3; }
+        .guide-notch { width: 12px; height: 12px; border: 2px solid var(--accent); transform: rotate(45deg); background: #000; box-shadow: 0 0 10px var(--accent); }
+
+        /* CONTEXT OVERLAY (The Map) */
+        #context-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #context-layer.visible { opacity: 1; pointer-events: auto; }
+        
+        .ctx-box { width: 80%; max-width: 700px; text-align: center; color: #aab; font-size: 18px; line-height: 1.8; }
+        .ctx-prev { opacity: 0.5; margin-bottom: 15px; font-size: 14px; }
+        .ctx-curr { color: #fff; font-weight: 500; font-size: 22px; padding: 20px 0; border-top: 1px solid #ffffff22; border-bottom: 1px solid #ffffff22; }
+        .ctx-hint { margin-top: 30px; font-size: 12px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; animation: pulse 2s infinite; cursor: pointer;}
+
+        /* HUD CONTROLS (Auto-Hiding) */
+        #hud {
+            position: absolute; bottom: 40px; z-index: 30; width: 90%; max-width: 500px;
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+            padding: 15px 25px; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            transition: opacity 0.5s, transform 0.5s;
+            opacity: 1; transform: translateY(0);
+        }
+        #hud.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
+
+        .row { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .row:last-child { margin-bottom: 0; }
+
+        button { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        button:hover { background: rgba(255,255,255,0.2); }
+        button.rewind { color: #ff5555; background: rgba(255, 85, 85, 0.1); }
+        
+        input[type=range] { flex-grow: 1; accent-color: var(--accent); height: 4px; background: #333; border-radius: 2px; }
+        .progress-track { width: 100%; height: 3px; background: #222; margin-top: 5px; border-radius: 2px; overflow: hidden; }
+        .progress-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.1s linear; box-shadow: 0 0 10px var(--accent); }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        /* INPUT MODAL */
+        #input-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:100; display:none; flex-direction:column; align-items:center; justify-content:center; }
+        textarea { width:80%; height:40%; background:#111; color:#ccc; border:1px solid #333; padding:15px; font-family:monospace; margin-bottom:20px; border-radius:8px; resize:none; outline:none; }
+    </style>
+</head>
+<body>
+
+    <div id="stage">
+        <canvas id="bg-canvas"></canvas>
+
+        <div class="focus-zone" id="click-zone">
+            <div class="guide-lines"><div class="guide-notch"></div></div>
+            <div class="word-display" id="word-disp">START</div>
+        </div>
+
+        <div id="context-layer">
+            <div class="ctx-box">
+                <div class="ctx-prev" id="ctx-prev"></div>
+                <div class="ctx-curr" id="ctx-curr">PAUSED</div>
+                <div class="ctx-hint" onclick="App.play()">TAP TO RESUME FLOW</div>
+            </div>
+        </div>
+
+        <div id="hud">
+            <div class="row">
+                <span style="font-size:10px; color:#888; font-weight:bold;">WPM: <span id="wpm-val" style="color:#fff">300</span></span>
+                <input type="range" id="wpm-slider" min="150" max="800" value="300" step="10">
+                <button onclick="App.showInput()">📝 NEW TEXT</button>
+            </div>
+            <div class="row">
+                <button class="rewind" onclick="event.stopPropagation(); App.rewind(10)">↺ BACK 10</button>
+                <div style="flex-grow:1; text-align:right; font-size:10px; color:#667;" id="status-txt">READY</div>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="prog-bar"></div></div>
+        </div>
+    </div>
+
+    <!-- PASTE MODAL -->
+    <div id="input-modal">
+        <h3 style="color:#fff">INJECT DATA STREAM</h3>
+        <textarea id="raw-text" placeholder="Paste your text here..."></textarea>
+        <div>
+            <button onclick="App.loadText()" style="background:var(--accent); color:#000;">LOAD</button>
+            <button onclick="document.getElementById('input-modal').style.display='none'">CANCEL</button>
+        </div>
+    </div>
+
+<script>
+/* --- VISUAL ENGINE (From v1) --- */
+const Visuals = {
+    canvas: document.getElementById('bg-canvas'),
+    ctx: null, w: 0, h: 0, particles: [], hue: 180,
+    init() {
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        for(let i=0; i<60; i++) this.spawn(true);
+        this.loop();
+    },
+    spawn(rand) {
+        this.particles.push({
+            x: rand ? Math.random() * this.w : Math.random() * this.w,
+            y: rand ? Math.random() * this.h : this.h + 20,
+            vy: -0.5 - Math.random(), r: Math.random() * 40 + 10,
+            life: 1, color: this.hue + Math.random()*40
+        });
+    },
+    resize() { this.w = this.canvas.width = window.innerWidth; this.h = this.canvas.height = window.innerHeight; },
+    pulse() { this.hue += 10; }, // Shift color on sentence end
+    loop() {
+        this.ctx.clearRect(0,0,this.w,this.h); // Cleaner clear for contrast
+        this.ctx.globalCompositeOperation = 'screen';
+        this.particles.forEach((p, i) => {
+            p.y += p.vy; p.life -= 0.002;
+            if(p.y < -50 || p.life <= 0) { this.particles.splice(i, 1); this.spawn(); }
+            const g = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+            g.addColorStop(0, `hsla(${p.color}, 70%, 50%, ${p.life * 0.15})`);
+            g.addColorStop(1, 'transparent');
+            this.ctx.fillStyle = g; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); this.ctx.fill();
+        });
+        requestAnimationFrame(() => this.loop());
+    }
+};
+
+/* --- LOGIC CORE --- */
+const App = {
+    // Demo Text: Chinese Poem + English Logic
+    raw: `Neuro-Flow System Online. Reading is not just seeing; it is processing. 
+    当你的眼睛 扫描 文字 时， 大脑 需要 时间 去 解码。 
+    But if we highlight the anchor points, cognition accelerates. 
+    明月 几时有？ 把酒 问 青天。 
+    See? The rhythm creates the memory.`,
+    
+    words: [], sentences: [], idx: 0, wpm: 300, isPlaying: false, timer: null,
+    
+    init() {
+        Visuals.init();
+        this.loadText(this.raw); // Preload demo
+        
+        // UI Events
+        document.getElementById('click-zone').addEventListener('click', () => this.toggle());
+        document.getElementById('wpm-slider').addEventListener('input', e => {
+            this.wpm = parseInt(e.target.value);
+            document.getElementById('wpm-val').innerText = this.wpm;
+        });
+
+        // Auto-Hide HUD
+        let idleTimer;
+        const hud = document.getElementById('hud');
+        const resetIdle = () => {
+            hud.classList.remove('hidden');
+            clearTimeout(idleTimer);
+            if(this.isPlaying) idleTimer = setTimeout(() => hud.classList.add('hidden'), 2500);
+        };
+        window.addEventListener('mousemove', resetIdle);
+        window.addEventListener('click', resetIdle);
+        window.addEventListener('touchstart', resetIdle);
+    },
+
+    showInput() { document.getElementById('input-modal').style.display = 'flex'; this.pause(); },
+    
+    loadText(customText) {
+        const txt = customText || document.getElementById('raw-text').value;
+        if(!txt) return;
+        
+        // 1. Sentence Breaking (Preserving Delimiters)
+        // Splits by . ? ! 。 ？！ and creates sentence list
+        const sentMatches = txt.match(/[^.!?。？！]+[.!?。？！]+["']?|[^.!?。？！]+$/g) || [txt];
+        this.sentences = sentMatches.map(s => s.trim());
+        
+        // 2. Word Flattening
+        this.words = [];
+        this.sentences.forEach((sent, sIdx) => {
+            // Split by space (for English/Manual Chinese) 
+            const tokens = sent.split(/\s+/).filter(t => t.length > 0);
+            tokens.forEach((t, wIdx) => {
+                this.words.push({ 
+                    text: t, sIdx: sIdx, 
+                    isEnd: wIdx === tokens.length - 1 
+                });
+            });
+        });
+        
+        this.idx = 0;
+        this.updateHUD();
+        document.getElementById('input-modal').style.display = 'none';
+        this.renderWord(this.idx);
+    },
+
+    toggle() { this.isPlaying ? this.pause() : this.play(); },
+    
+    play() {
+        this.isPlaying = true;
+        document.getElementById('context-layer').classList.remove('visible');
+        document.getElementById('stage').classList.remove('paused');
+        this.loop();
+    },
+    
+    pause() {
+        clearTimeout(this.timer);
+        this.isPlaying = false;
+        
+        // Context Overlay Logic
+        const currW = this.words[this.idx] || this.words[0];
+        const sIdx = currW.sIdx;
+        
+        document.getElementById('ctx-prev').innerText = this.sentences[sIdx-1] || "";
+        document.getElementById('ctx-curr').innerText = this.sentences[sIdx] || "";
+        
+        document.getElementById('context-layer').classList.add('visible');
+        document.getElementById('stage').classList.add('paused');
+    },
+
+    rewind(n) {
+        this.idx = Math.max(0, this.idx - n);
+        this.renderWord(this.idx);
+        if(this.isPlaying) { clearTimeout(this.timer); this.loop(); }
+        else this.pause(); // Refresh context
+    },
+
+    loop() {
+        if(this.idx >= this.words.length) { this.pause(); this.idx = 0; return; }
+        
+        const wObj = this.words[this.idx];
+        this.renderWord(this.idx);
+
+        // --- RHYTHM ALGORITHM ---
+        let delay = 60000 / this.wpm;
+        const len = wObj.text.replace(/[^\w\u4e00-\u9fa5]/g, '').length; // Clean length
+        
+        // 1. Length weight (Long words need more time)
+        if(len > 7) delay *= 1.3;
+        
+        // 2. Punctuation weight (Commas take a breath)
+        if(wObj.text.includes(',') || wObj.text.includes('，')) delay *= 1.5;
+        
+        // 3. Sentence End (Deep processing pause)
+        if(wObj.isEnd) {
+            delay *= 2.2;
+            Visuals.pulse(); // Visual feedback on sentence finish
+        }
+
+        this.idx++;
+        this.timer = setTimeout(() => this.loop(), delay);
+    },
+
+    /* --- THE BIONIC & CHINESE LOGIC --- */
+    renderWord(i) {
+        const w = this.words[i].text;
+        const el = document.getElementById('word-disp');
+        
+        // Check if Chinese (Char code > 255 roughly covers CJK)
+        const isChinese = /[\u4e00-\u9fa5]/.test(w);
+        let html = '';
+
+        if(isChinese) {
+            // --- CHINESE LOGIC ---
+            // Rule: Highlight first char if length >= 2
+            // If length is 1, just bold it whole? Or no bold?
+            // Let's bold the first char to act as anchor.
+            const clean = w.replace(/[，。？！]/g, ''); // Strip punct for logic
+            const punct = w.substring(clean.length);
+            
+            if(clean.length > 1) {
+                 // Highlight 1st char for 2-3 char words, 1st&2nd for 4 char words
+                 const boldLen = clean.length >= 4 ? 2 : 1;
+                 html = `<span class="highlight">${clean.substring(0, boldLen)}</span>${clean.substring(boldLen)}${punct}`;
+            } else {
+                 html = `<span class="highlight">${clean}</span>${punct}`;
+            }
+
+        } else {
+            // --- ENGLISH/LATIN LOGIC ---
+            // Rule: Highlight first half
+            const mid = Math.ceil(w.length / 2);
+            // Handle punctuation separation (e.g., "word." -> "word" + ".")
+            const match = w.match(/^([a-zA-Z0-9'-]+)(.*)$/);
+            
+            if(match) {
+                const core = match[1];
+                const rest = match[2];
+                const p1 = core.slice(0, Math.ceil(core.length/2));
+                const p2 = core.slice(Math.ceil(core.length/2));
+                html = `<span class="highlight">${p1}</span>${p2}${rest}`;
+            } else {
+                html = w; // Fallback for pure symbols
+            }
+        }
+
+        el.innerHTML = html;
+        this.updateHUD();
+    },
+
+    updateHUD() {
+        const pct = (this.idx / this.words.length) * 100;
+        document.getElementById('prog-bar').style.width = pct + '%';
+        const sIdx = this.words[this.idx] ? this.words[this.idx].sIdx : 0;
+        document.getElementById('status-txt').innerText = `SENTENCE ${sIdx+1} / ${this.sentences.length}`;
+    }
+};
+
+window.onload = () => App.init();
+</script>
+</body>
+</html>
