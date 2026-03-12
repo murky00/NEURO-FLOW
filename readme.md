@@ -3,34 +3,47 @@
 
 > **"Evolution designed your eyes to spot a lion, not to decode tiny symbols. We fixed that."**
 
-**Neuro-Flow** 是一个基于 **RSVP (快速序列视觉呈现)** 与 **仿生阅读 (Bionic Reading)** 技术构建的下一代高带宽信息注入引擎。它旨在绕过人类原本低效的“眼动-默读”回路，将信息流直接投射至视觉皮层。
+**Neuro-Flow** is a next-generation high-bandwidth information injection engine built on **RSVP (Rapid Sequence Visual Presentation)** and **Bionic Reading** technologies. It aims to bypass the inefficient human "eye-tracking-silent reading" loop, projecting information directly to the visual cortex.
 
 ---
 
-## 🌌 Core Philosophy (核心哲学)
+## 🌌 Core Philosophy
 
-1.  **Visual Injection (视觉注入)**: 消除眼球扫视（Saccade）带来的 150ms 延迟，通过定点投射实现 3x-5x 阅读速度提升。
-2.  **Cognitive Anchoring (认知定锚)**: 这里的每个单词并非平等。通过算法高亮单词前半部分的“骨架”，触发大脑的自动补全机制，降低解码能耗。
-3.  **Rhythmic Flow (节奏流)**: 智能识别句号、逗号与长难词，自动调整展示时长。阅读不再是匀速运动，而是像音乐一样的呼吸韵律。
+1. **Visual Injection**: Eliminates the 150ms delay caused by saccades, achieving a 3x-5x reading speed improvement through fixed-point projection.
 
-## 🎮 How to Use (食用指南)
+2. **Cognitive Anchoring**: Not every word is equal. By highlighting the first half of the word's "skeleton" using an algorithm, the brain's automatic completion mechanism is triggered, reducing decoding energy consumption.
 
-1.  **启动**: 打开 `index.html` (建议全屏)。
-2.  **注入**: 点击底部的 `📝 NEW TEXT`，粘贴你需要阅读的文章。
-3.  **分词 (关键)**:
-    *   **English**: 直接粘贴，系统完美支持。
-    *   **中文**: 为了最佳体验，请使用**带空格分词**的文本。这能让系统识别出“词语”而非“单字”，节奏感提升 100%。
-4.  **控制**:
-    *   `点击屏幕`: 暂停/播放（暂停时会显示上下文回顾）。
-    *   `滑动滑块`: 调整 WPM (Words Per Minute)。初学者建议 300，熟练者可挑战 600+。
-    *   `回溯`: 迷失时点击 `↺ BACK 10`。
-5.  **沉浸**: 鼠标静止 3 秒，HUD 自动隐藏，仅保留流体背景。
+3. **Rhythmic Flow:** Intelligently recognizes periods, commas, and complex words, automatically adjusting display duration. Reading is no longer a constant pace, but a rhythmic, musical experience.
+
+## 🎮 How to Use
+
+1. **Startup:** Open `index.html` (full screen recommended).
+
+2. **Injection:** Click `📝 NEW TEXT` at the bottom and paste the article you want to read.
+
+3. **Word Segmentation (Key):**
+
+* **English:** Paste directly; the system supports it perfectly.
+
+* **Chinese:** For the best experience, please use text with **spaces for word segmentation**. This allows the system to recognize "words" rather than "characters," enhancing the rhythm by 100%.
+
+4. **Controls:**
+
+* `Tap screen`: Pause/play (a context review will be displayed when paused).
+
+* `Slide slider`: Adjust WPM (Words Per Minute). Beginners are advised to aim for 300; experienced users can challenge themselves with 600+.
+
+* `Backtrack`: Click `↺ BACK 10` when lost.
+
+5. **Immersive**: The HUD automatically hides after the mouse is stationary for 3 seconds, leaving only the fluid background visible.
 
 ## 📦 Tech Stack
 
-*   **Engine**: Vanilla JS (Zero dependencies)
-*   **Visuals**: HTML5 Canvas + Particle Physics
-*   **Design**: Cyberpunk / Minimalist UI
+* **Engine**: Vanilla JS (Zero dependencies)
+
+* **Visuals**: HTML5 Canvas + Particle Physics
+
+* **Design**: Cyberpunk / Minimalist UI
 
 ---
 
